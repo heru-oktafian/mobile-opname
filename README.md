@@ -22,6 +22,12 @@
 
 ---
 
+## Lisensi
+Karya ini (termasuk semua kode dan konten di repositori ini) dilindungi oleh hak cipta. Penggunaan, penyalinan, atau modifikasi dalam bentuk apa pun dilarang tanpa izin tertulis dari saya.
+
+Untuk meminta izin, silakan hubungi saya di [alamat email Anda].
+---
+
 ## 🧐 Tentang Proyek
 
 Proyek **Mobile Opname** dirancang untuk menggantikan proses opname stok gudang yang masih manual (menggunakan kertas atau spreadsheet) menjadi digital. Aplikasi ini memungkinkan petugas gudang untuk:

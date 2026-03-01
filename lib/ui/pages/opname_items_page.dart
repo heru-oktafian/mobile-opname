@@ -36,6 +36,7 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
 
   final TextEditingController _productNameController = TextEditingController();
   final TextEditingController _qtyController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
   DateTime? _selectedExpiredDate;
   Map<String, dynamic>? _selectedProduct;
 
@@ -49,6 +50,7 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
   void dispose() {
     _productNameController.dispose();
     _qtyController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -78,17 +80,29 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
       return;
     }
 
-    final String apiUrl = '$baseUrl/opname-items/${widget.opnameId}';
+    // backend has changed: GET-by-path no longer works; we must POST with
+    // opname_id in the body. This avoids any GET-with-body restrictions on
+    // web and satisfies the updated API contract.
+    final String apiUrl = '$baseUrl/opname-items-all';
 
     try {
-      final response = await http.get(
+      final Map<String, dynamic> requestBody = {'opname_id': widget.opnameId};
+
+      final response = await http.post(
         Uri.parse(apiUrl),
-        headers: <String, String>{'Authorization': 'Bearer $token'},
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(response.body);
-        if (responseData['status'] == 'success') {
+        final String status =
+            responseData['status']?.toString().toLowerCase() ?? '';
+        final String message = responseData['message']?.toString() ?? '';
+        if (status == 'success') {
           final dynamic data = responseData['data'];
           if (data is List) {
             setState(() {
@@ -101,9 +115,20 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
             );
           }
         } else {
-          _setErrorMessageAndShowSnackbar(
-            responseData['message'] ?? 'Gagal memuat item opname.',
-          );
+          // Treat some known error messages as empty results rather than fatal
+          if (message.contains('Produk tidak ditemukan')) {
+            setState(() {
+              _opnameItems = [];
+              _isLoading = false;
+            });
+            _setErrorMessageAndShowSnackbar(
+              'Belum ada item opname yang tersimpan.',
+            );
+          } else {
+            _setErrorMessageAndShowSnackbar(
+              message.isNotEmpty ? message : 'Gagal memuat item opname.',
+            );
+          }
         }
       } else {
         _setErrorMessageAndShowSnackbar(
@@ -409,10 +434,12 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
       return;
     }
 
-    if (_qtyController.text.isEmpty || _selectedExpiredDate == null) {
+    if (_qtyController.text.isEmpty ||
+        _priceController.text.isEmpty ||
+        _selectedExpiredDate == null) {
       showCustomSnackBar(
         context,
-        'Kuantitas dan Tanggal Kadaluarsa harus diisi!',
+        'Harga, kuantitas, dan tanggal kadaluarsa harus diisi!',
         isError: true,
       );
       return;
@@ -442,6 +469,7 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
     final Map<String, dynamic> body = {
       "opname_id": widget.opnameId,
       "product_id": _selectedProduct!['pro_id'],
+      "price": int.parse(_priceController.text),
       "qty": int.parse(_qtyController.text),
       "expired_date": formattedExpiredDate,
     };
@@ -502,6 +530,7 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
 
   void _clearFormFields() {
     _productNameController.clear();
+    _priceController.clear();
     _qtyController.clear();
     setState(() {
       _selectedExpiredDate = null;
@@ -573,6 +602,28 @@ class _OpnameItemsPageState extends State<OpnameItemsPage> {
                           style: blackTextStyle,
                         ),
                       ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextField(
+                      controller: _priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Price',
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: AppColors.success,
+                            width: 2,
+                          ),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                        filled: true,
+                        fillColor: AppColors.gray[200],
+                      ),
+                      style: blackTextStyle,
                     ),
                     const SizedBox(height: 15),
                     TextField(

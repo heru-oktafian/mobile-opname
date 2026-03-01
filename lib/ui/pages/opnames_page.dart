@@ -49,10 +49,13 @@ class _OpnamePagesState extends State<OpnamePages> {
       return;
     }
 
+    // endpoint does not require a body, just Authorization header.
+    // use GET to match API expectations.
     final String apiUrl = '$baseUrl/mobile-opnames-active';
 
+    http.Response response;
     try {
-      final response = await http.get(
+      response = await http.get(
         Uri.parse(apiUrl),
         headers: <String, String>{'Authorization': 'Bearer $token'},
       );

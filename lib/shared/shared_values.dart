@@ -1,1 +1,1 @@
-String baseUrl = 'https://retailpro.viekosoft.com/api';
+String baseUrl = 'http://vimedika.com:1112/api';
